@@ -47,6 +47,13 @@ class LocationService {
           'error': 'Tidak dapat mendapatkan posisi. Pastikan GPS aktif.',
         };
       }
+      
+      if (position.isMocked) {
+        return {
+          'success': false,
+          'error': 'Aplikasi Fake GPS (Tuyul) terdeteksi! Harap matikan aplikasi pemalsu lokasi Anda untuk presensi.',
+        };
+      }
 
       // Hitung jarak (keluarnya dalam satuan meter)
       // Parameter: StartLat, StartLng, EndLat, EndLng
