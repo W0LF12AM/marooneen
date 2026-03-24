@@ -80,7 +80,7 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Gagal: ${e.toString()}'),
+            content: Text('Gagal: ${e.toString()}'),
             backgroundColor: Colors.red,
           ),
         );

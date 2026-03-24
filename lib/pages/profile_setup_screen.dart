@@ -20,7 +20,7 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
   final _jurusanController = TextEditingController();
   final _phoneController = TextEditingController();
   String? _selectedGender;
-  
+
   final UserProfileService _profileService = UserProfileService();
   bool _isLoading = false;
 
@@ -59,8 +59,13 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
       barrierDismissible: false,
       builder: (context) {
         return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: const Text('Konfirmasi Data', style: TextStyle(fontWeight: FontWeight.bold)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: const Text(
+            'Konfirmasi Data',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
           content: const Text(
             'Apakah Anda yakin data yang diisi sudah benar?\n\n'
             'Data profil ini (Nama, NPM, Fakultas, Jurusan, dll) '
@@ -70,17 +75,22 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context), // Tutup dialog doang
-              child: const Text('Cek Lagi', style: TextStyle(color: Colors.grey)),
+              child: const Text(
+                'Cek Lagi',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.black,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               onPressed: () {
                 Navigator.pop(context); // Tutup dialog
-                _processSaveProfile();  // Jalanin fungsi simpan
+                _processSaveProfile(); // Jalanin fungsi simpan
               },
               child: const Text('Yakin & Simpan'),
             ),
@@ -129,16 +139,6 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
             children: [
               // Avatar Logo
               const ProfileWidget(),
-              const SizedBox(height: 12),
-              const Text(
-                'Lengkapi Data Diri',
-                style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Masukkan data asli, data tidak dapat diubah!',
-                style: TextStyle(color: Colors.red.shade400, fontSize: 13),
-              ),
               const SizedBox(height: 24),
 
               // Form inputs
@@ -167,13 +167,15 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     const SizedBox(height: 12),
                     ShadInput(
                       controller: _fakultasController,
-                      placeholder: const Text('Fakultas (contoh: MIPA)'),
+                      placeholder: const Text('Fakultas (contoh: FMIPA)'),
                       leading: const Icon(LucideIcons.building, size: 20),
                     ),
                     const SizedBox(height: 12),
                     ShadInput(
                       controller: _jurusanController,
-                      placeholder: const Text('Jurusan (contoh: Ilmu Komputer)'),
+                      placeholder: const Text(
+                        'Jurusan (contoh: Ilmu Komputer)',
+                      ),
                       leading: const Icon(LucideIcons.bookOpen, size: 20),
                     ),
                     const SizedBox(height: 12),
@@ -188,28 +190,57 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                     // Dropdown Gender
                     Container(
                       height: 48, // Samain sama ShadInput
+                      padding: const EdgeInsets.symmetric(horizontal: 16),
                       decoration: BoxDecoration(
                         border: Border.all(color: Colors.grey.shade300),
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: _selectedGender,
-                          hint: const Padding(
-                            padding: EdgeInsets.symmetric(horizontal: 36), // nyamain icon padding
-                            child: Text('Pilih Jenis Kelamin', style: TextStyle(color: Colors.grey, fontSize: 14)),
+                      child: Row(
+                        children: [
+                          Icon(
+                            LucideIcons.users,
+                            size: 20,
+                            color: Colors.grey.shade700,
+                          ), // ICON JENIS KELAMIN
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedGender,
+                                hint: const Text(
+                                  'Pilih Jenis Kelamin',
+                                  style: TextStyle(
+                                    color: Colors.grey,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                isExpanded: true,
+                                icon: const Icon(
+                                  LucideIcons.chevronDown,
+                                  size: 16,
+                                ),
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'Laki-laki',
+                                    child: Text(
+                                      'Laki-laki',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Perempuan',
+                                    child: Text(
+                                      'Perempuan',
+                                      style: TextStyle(fontSize: 14),
+                                    ),
+                                  ),
+                                ],
+                                onChanged: (v) =>
+                                    setState(() => _selectedGender = v!),
+                              ),
+                            ),
                           ),
-                          isExpanded: true,
-                          icon: const Padding(
-                            padding: EdgeInsets.only(right: 12),
-                            child: Icon(LucideIcons.chevronDown, size: 16),
-                          ),
-                          items: const [
-                            DropdownMenuItem(value: 'Laki-laki', child: Padding(padding: EdgeInsets.only(left: 36), child: Text('Laki-laki', style: TextStyle(fontSize: 14)))),
-                            DropdownMenuItem(value: 'Perempuan', child: Padding(padding: EdgeInsets.only(left: 36), child: Text('Perempuan', style: TextStyle(fontSize: 14)))),
-                          ],
-                          onChanged: (v) => setState(() => _selectedGender = v!),
-                        ),
+                        ],
                       ),
                     ),
                     const SizedBox(height: 32),
@@ -223,11 +254,18 @@ class _ProfileSetupScreenState extends State<ProfileSetupScreen> {
                           ? const SizedBox(
                               height: 16,
                               width: 16,
-                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             )
                           : const Text(
                               'Konfirmasi & Simpan',
-                              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16),
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
                             ),
                     ),
                   ],

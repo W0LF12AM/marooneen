@@ -21,7 +21,7 @@ class FaceRecognitionService {
     try {
       _interpreter = await Interpreter.fromAsset('assets/mobilefacenet.tflite');
     } catch (e) {
-      print("❌ Error loading model: \$e");
+      print("Error loading model: \$e");
     }
   }
 

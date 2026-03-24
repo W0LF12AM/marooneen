@@ -37,11 +37,7 @@ class _HomeTabState extends State<HomeTab> {
                 children: [
                   const Text(
                     'Beranda',
-                    style: TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.w900,
-                      letterSpacing: -0.5,
-                    ),
+                    style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
                   ShadButton.outline(
                     width: 48,

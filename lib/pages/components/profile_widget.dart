@@ -37,6 +37,11 @@ class ProfileWidget extends StatelessWidget {
           'Profil wajib diisi sebelum menggunakan aplikasi',
           style: TextStyle(fontSize: 16, color: Colors.grey),
         ),
+        SizedBox(height: 4),
+        Text(
+          'Masukkan data asli, data tidak dapat diubah!',
+          style: TextStyle(color: Colors.red.shade400, fontSize: 13),
+        ),
       ],
     );
   }
