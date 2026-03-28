@@ -9,24 +9,19 @@ class IconWidget extends StatelessWidget {
       children: [
         Container(
           decoration: BoxDecoration(
-            color: Colors.black,
+            color: Colors.white,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: SizedBox(
-            height: 48,
-            width: 48,
-            child: Center(
-              child: Text(
-                'M',
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.white,
-                ),
-              ),
+          child: Center(
+            child: Image.asset(
+              'assets/marooneen_logo.png',
+              height: 120,
+              width: 120,
             ),
+           
           ),
         ),
+
         SizedBox(height: 8),
         Text(
           'Welcome to Marooneen',

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:marooneen/models/user_profile_model.dart';
 import 'package:marooneen/pages/face_registration_screen.dart';
+import 'package:marooneen/pages/support_ticket_screen.dart';
 import 'package:marooneen/widget/const.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
@@ -196,6 +197,60 @@ class ProfileTab extends StatelessWidget {
               ),
               const SizedBox(height: 40),
             ],
+
+            // ─── BANTUAN / SUPPORT TICKET ───
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: Colors.grey.shade200),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.03),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: ListTile(
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                leading: Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: primaryColor.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Icon(LucideIcons.lifeBuoy, color: primaryColor),
+                ),
+                title: const Text(
+                  'Bantuan & Support',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                subtitle: Text(
+                  'Pusat bantuan jika ada kendala',
+                  style: TextStyle(color: accentColor4, fontSize: 13),
+                ),
+                trailing: Icon(LucideIcons.chevronRight, color: accentColor4),
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => SupportTicketScreen(
+                        userName: profile.name,
+                        userNpm: profile.npm,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+            const SizedBox(height: 24),
 
             // ─── LOGOUT BUTTON ───
             ShadButton.outline(

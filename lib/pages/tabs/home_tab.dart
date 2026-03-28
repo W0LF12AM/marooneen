@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:marooneen/models/class_model.dart';
 import 'package:marooneen/models/user_profile_model.dart';
 import 'package:marooneen/pages/components/class_card.dart';
 import 'package:marooneen/pages/components/user_profile_card.dart';
+import 'package:marooneen/pages/notification_screen.dart';
 import 'package:marooneen/services/class_service.dart';
 import 'package:marooneen/widget/const.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class HomeTab extends StatefulWidget {
   const HomeTab({super.key, required this.profile});
@@ -19,6 +22,20 @@ class HomeTab extends StatefulWidget {
 class _HomeTabState extends State<HomeTab> {
   final ClassService _classService = ClassService();
   String search = '';
+  List<String> _readBroadcasts = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUnreadStatus();
+  }
+
+  Future<void> _loadUnreadStatus() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _readBroadcasts = prefs.getStringList('readBroadcasts') ?? [];
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -39,21 +56,108 @@ class _HomeTabState extends State<HomeTab> {
                     'Beranda',
                     style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold),
                   ),
-                  ShadButton.outline(
-                    width: 48,
-                    height: 48,
-                    padding: EdgeInsets.zero,
-                    decoration: ShadDecoration(
-                      shape: BoxShape.circle,
-                      color: Colors.white,
-                      border: ShadBorder.all(color: Colors.grey.shade200),
-                    ),
-                    onPressed: () {},
-                    child: Icon(
-                      LucideIcons.bell,
-                      size: 20,
-                      color: primaryColor,
-                    ),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('broadcasts')
+                        .snapshots(),
+                    builder: (context, broadcastSnapshot) {
+                      return StreamBuilder<QuerySnapshot>(
+                        // Ambil notifikasi dari Firestore untuk dot merah (biar gak bentrok index kita tidak pakai Where isRead)
+                        stream: FirebaseFirestore.instance
+                            .collection('notifications')
+                            .where(
+                              'userNpm',
+                              whereIn: [widget.profile.npm, 'all'],
+                            )
+                            .snapshots(),
+                        builder: (context, notifSnapshot) {
+                          int unreadCount = 0;
+
+                          // 1. Cek dari Notifikasi Biasa
+                          if (notifSnapshot.hasData) {
+                            for (var doc in notifSnapshot.data!.docs) {
+                              var data = doc.data() as Map<String, dynamic>;
+                              if (data['isRead'] == false) {
+                                unreadCount++;
+                              }
+                            }
+                          }
+
+                          // 2. Cek dari Broadcasts
+                          if (broadcastSnapshot.hasData) {
+                            for (var doc in broadcastSnapshot.data!.docs) {
+                              if (!_readBroadcasts.contains(doc.id)) {
+                                unreadCount++;
+                              }
+                            }
+                          }
+
+                          return Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              ShadButton.outline(
+                                width: 48,
+                                height: 48,
+                                padding: EdgeInsets.zero,
+                                decoration: ShadDecoration(
+                                  shape: BoxShape.circle,
+                                  color: Colors.white,
+                                  border: ShadBorder.all(
+                                    color: Colors.grey.shade200,
+                                  ),
+                                ),
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => NotificationScreen(
+                                        userNpm: widget.profile.npm,
+                                      ),
+                                    ),
+                                  ).then((_) {
+                                    _loadUnreadStatus(); // Refresh badge saat kembali
+                                  });
+                                },
+                                child: Icon(
+                                  LucideIcons.bell,
+                                  size: 20,
+                                  color: primaryColor,
+                                ),
+                              ),
+
+                              // UNREAD DOT MERAH + COUNT
+                              if (unreadCount > 0)
+                                Positioned(
+                                  top: 4,
+                                  right: 4,
+                                  child: Container(
+                                    padding: const EdgeInsets.all(4),
+                                    decoration: const BoxDecoration(
+                                      color: Colors.red,
+                                      shape: BoxShape.circle,
+                                    ),
+                                    constraints: const BoxConstraints(
+                                      minWidth: 18,
+                                      minHeight: 18,
+                                    ),
+                                    child: Center(
+                                      child: Text(
+                                        unreadCount > 99 ? '99+' : unreadCount.toString(),
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontSize: 10,
+                                          fontWeight: FontWeight.bold,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                   ),
                 ],
               ),
