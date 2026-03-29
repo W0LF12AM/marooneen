@@ -26,6 +26,7 @@ class ClassModel {
   final int radius;
   final DateTime tanggal;
   final String tempat;
+  final String tipeKelas;
 
   ClassModel({
     required this.id,
@@ -37,6 +38,7 @@ class ClassModel {
     required this.radius,
     required this.tanggal,
     required this.tempat,
+    required this.tipeKelas,
   });
 
   factory ClassModel.fromFirestore(DocumentSnapshot doc) {
@@ -51,6 +53,7 @@ class ClassModel {
       radius: (data['radius'] ?? 0).toInt(),
       tanggal: _parseTanggal(data['tanggal']),
       tempat: data['tempat'] ?? '',
+      tipeKelas: data['tipe_kelas'] ?? 'Offline',
     );
   }
 
@@ -64,6 +67,7 @@ class ClassModel {
       'radius': radius,
       'tanggal': Timestamp.fromDate(tanggal),
       'tempat': tempat,
+      'tipe_kelas': tipeKelas,
     };
   }
 }

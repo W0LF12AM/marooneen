@@ -40,19 +40,19 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
         break;
       }
     }
-    
+
     // Kalau gada kamera depan, pake back camera aja
     frontCamera ??= _cameras!.first;
 
     // Inisialisasi controller
     _cameraController = CameraController(
       frontCamera,
-      ResolutionPreset.medium, 
+      ResolutionPreset.medium,
       enableAudio: false,
     );
 
     await _cameraController!.initialize();
-    
+
     if (mounted) {
       setState(() {
         _isInit = true;
@@ -67,7 +67,8 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
   }
 
   Future<void> _captureFace() async {
-    if (_cameraController == null || !_cameraController!.value.isInitialized) return;
+    if (_cameraController == null || !_cameraController!.value.isInitialized)
+      return;
     if (_isProcessing) return; // Mencegah double tap
 
     setState(() => _isProcessing = true);
@@ -75,8 +76,8 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
     try {
       // 1. Ambil foto
       final XFile image = await _cameraController!.takePicture();
-      debugPrint("📷 Foto berhasil diambil: ${image.path}");
-      
+      debugPrint("Foto berhasil diambil: ${image.path}");
+
       // 2. Extraks wajah ke bentuk Angka (192 float)
       final embedding = await _faceService.extractEmbedding(image);
 
@@ -84,8 +85,8 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-               content: Text('Wajah tidak terdeteksi dengan jelas. Coba lagi!'),
-               backgroundColor: Colors.red,
+              content: Text('Wajah tidak terdeteksi dengan jelas. Coba lagi!'),
+              backgroundColor: Colors.red,
             ),
           );
         }
@@ -93,15 +94,14 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
         // 3. Tembak langsung ke Firestore
         final uid = FirebaseAuth.instance.currentUser?.uid;
         if (uid != null) {
-          await FirebaseFirestore.instance.collection('users').doc(uid).set(
-            {'faceEmbedding': embedding},
-            SetOptions(merge: true),
-          );
+          await FirebaseFirestore.instance.collection('users').doc(uid).set({
+            'faceEmbedding': embedding,
+          }, SetOptions(merge: true));
 
           if (mounted) {
             ScaffoldMessenger.of(context).showSnackBar(
               const SnackBar(
-                content: Text('✅ Data Wajah berhasil diregister & tersimpan!'),
+                content: Text('Data Wajah berhasil diregister & tersimpan!'),
                 backgroundColor: Colors.green,
               ),
             );
@@ -113,7 +113,10 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
       debugPrint("❌ Error capture: $e");
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Terjadi error: $e'), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text('Terjadi error: $e'),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } finally {
@@ -124,15 +127,16 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
   @override
   Widget build(BuildContext context) {
     if (!_isInit || _cameraController == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
     }
 
     return Scaffold(
       backgroundColor: primaryColor,
       appBar: AppBar(
-        title: const Text('Daftarkan Wajah', style: TextStyle(color: Colors.white)),
+        title: const Text(
+          'Daftarkan Wajah',
+          style: TextStyle(color: Colors.white),
+        ),
         backgroundColor: Colors.transparent,
         iconTheme: const IconThemeData(color: Colors.white),
       ),
@@ -196,7 +200,11 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
                         shape: BoxShape.circle,
                         color: Colors.black,
                       ),
-                      child: const Icon(LucideIcons.camera, color: Colors.white, size: 30),
+                      child: const Icon(
+                        LucideIcons.camera,
+                        color: Colors.white,
+                        size: 30,
+                      ),
                     ),
                   ),
                 ),
@@ -216,7 +224,11 @@ class _FaceRegistrationScreenState extends State<FaceRegistrationScreen> {
                     SizedBox(height: 16),
                     Text(
                       'Memproses Wajah...',
-                      style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ],
                 ),

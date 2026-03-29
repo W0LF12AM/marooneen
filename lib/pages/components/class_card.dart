@@ -97,6 +97,35 @@ class _ClassCardState extends State<ClassCard> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
+                  const Spacer(),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: widget.kelas.tipeKelas.toLowerCase() == 'online'
+                          ? Colors.blue.withOpacity(0.2)
+                          : Colors.orange.withOpacity(0.2),
+                      border: Border.all(
+                        color: widget.kelas.tipeKelas.toLowerCase() == 'online'
+                            ? Colors.blue
+                            : Colors.orange,
+                      ),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      widget.kelas.tipeKelas.toUpperCase(),
+                      style: TextStyle(
+                        color: widget.kelas.tipeKelas.toLowerCase() == 'online'
+                            ? Colors.blue.shade300
+                            : Colors.orange.shade300,
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 8),

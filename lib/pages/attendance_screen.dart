@@ -150,54 +150,59 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         return;
       }
 
-      // 3. Cek Radius Lokasi (Hadir / Telat)
-      final locationResult = await _locationService.checkInRadius(widget.kelas);
+      // 3. Cek Radius Lokasi (Hanya untuk kelas Offline)
+      if (widget.kelas.tipeKelas.toLowerCase() != 'online') {
+        final locationResult = await _locationService.checkInRadius(
+          widget.kelas,
+        );
 
-      // Fake GPS terdeteksi
-      if (locationResult['success'] == false) {
-        final errMsg = locationResult['error'] as String;
-        final isFakeGps =
-            errMsg.toLowerCase().contains('tuyul') ||
-            errMsg.toLowerCase().contains('fake') ||
-            errMsg.toLowerCase().contains('pemalsu');
+        // Fake GPS terdeteksi
+        if (locationResult['success'] == false) {
+          final errMsg = locationResult['error'] as String;
+          final isFakeGps =
+              errMsg.toLowerCase().contains('tuyul') ||
+              errMsg.toLowerCase().contains('fake') ||
+              errMsg.toLowerCase().contains('pemalsu');
 
-        if (isFakeGps) {
+          if (isFakeGps) {
+            await _fraudService.logFraud(
+              userId: uid,
+              userName: userProfile.name,
+              userNpm: userProfile.npm,
+              classId: widget.kelas.id,
+              className: widget.kelas.kelas,
+              fraudType: 'fake_gps',
+              description:
+                  'Aplikasi Fake GPS terdeteksi saat mencoba presensi.',
+            );
+          }
+          throw Exception(errMsg);
+        }
+
+        // Di luar radius
+        if (locationResult['isInside'] == false) {
+          double dist = locationResult['distance'];
+          final double? lat = locationResult['latitude'] as double?;
+          final double? lng = locationResult['longitude'] as double?;
+
           await _fraudService.logFraud(
             userId: uid,
             userName: userProfile.name,
             userNpm: userProfile.npm,
             classId: widget.kelas.id,
             className: widget.kelas.kelas,
-            fraudType: 'fake_gps',
-            description: 'Aplikasi Fake GPS terdeteksi saat mencoba presensi.',
+            fraudType: 'out_of_radius',
+            description:
+                'Presensi ditolak: berada diluar radius kelas. Jarak: ${dist.toStringAsFixed(1)}m, Radius Kelas: ${widget.kelas.radius}m.',
+            latitude: lat,
+            longitude: lng,
+            distanceFromClass: dist,
+          );
+
+          throw Exception(
+            'Anda berada diluar batas kelas! Jarak: ${dist.toStringAsFixed(1)}m. Batas GPS Kelas: ${widget.kelas.radius}m',
           );
         }
-        throw Exception(errMsg);
-      }
-
-      // Di luar radius
-      if (locationResult['isInside'] == false) {
-        double dist = locationResult['distance'];
-        final double? lat = locationResult['latitude'] as double?;
-        final double? lng = locationResult['longitude'] as double?;
-
-        await _fraudService.logFraud(
-          userId: uid,
-          userName: userProfile.name,
-          userNpm: userProfile.npm,
-          classId: widget.kelas.id,
-          className: widget.kelas.kelas,
-          fraudType: 'out_of_radius',
-          description:
-              'Presensi ditolak: berada diluar radius kelas. Jarak: ${dist.toStringAsFixed(1)}m, Radius Kelas: ${widget.kelas.radius}m.',
-          latitude: lat,
-          longitude: lng,
-          distanceFromClass: dist,
-        );
-
-        throw Exception(
-          'Anda berada diluar batas kelas! Jarak: ${dist.toStringAsFixed(1)}m. Batas GPS Kelas: ${widget.kelas.radius}m',
-        );
       }
 
       // 4. Masuk Ke Proses Validasi Wajah (Hadir / Telat)
