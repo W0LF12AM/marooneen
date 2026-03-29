@@ -41,20 +41,26 @@ class _ClassCardState extends State<ClassCard> {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Row(
-                    children: [
-                      Icon(LucideIcons.book, color: accentColor, size: 20),
-                      const SizedBox(width: 8),
-                      Text(
-                        widget.kelas.kelas,
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                  Expanded(
+                    child: Row(
+                      children: [
+                        Icon(LucideIcons.book, color: accentColor, size: 20),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            widget.kelas.kelas,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 20,
+                            ),
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
+                  const SizedBox(width: 12),
                   Container(
                     decoration: BoxDecoration(
                       border: Border.all(color: accentColor4),
