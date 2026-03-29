@@ -276,7 +276,9 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  widget.kelas.tempat,
+                  widget.kelas.tipeKelas.toLowerCase() == 'online'
+                      ? "Kelas Online"
+                      : widget.kelas.tempat,
                   style: const TextStyle(
                     color: Colors.white,
                     fontSize: 32,

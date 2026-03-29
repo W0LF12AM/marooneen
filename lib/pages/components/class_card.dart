@@ -131,10 +131,17 @@ class _ClassCardState extends State<ClassCard> {
               const SizedBox(height: 8),
               Row(
                 children: [
-                  Icon(LucideIcons.pin, color: accentColor),
+                  Icon(
+                    widget.kelas.tipeKelas.toLowerCase() == 'online'
+                        ? LucideIcons.globe
+                        : LucideIcons.pin,
+                    color: accentColor,
+                  ),
                   const SizedBox(width: 8),
                   Text(
-                    widget.kelas.tempat,
+                    widget.kelas.tipeKelas.toLowerCase() == 'online'
+                        ? "Kelas Online"
+                        : widget.kelas.tempat,
                     style: const TextStyle(color: Colors.white, fontSize: 16),
                   ),
                 ],
