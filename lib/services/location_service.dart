@@ -70,6 +70,8 @@ class LocationService {
         'success': true,
         'isInside': isInside,
         'distance': distanceInMeters,
+        'latitude': position.latitude,
+        'longitude': position.longitude,
       };
       
     } catch (e) {

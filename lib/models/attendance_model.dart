@@ -10,6 +10,7 @@ class AttendanceModel {
   final String userNpm;
   final String className;
   final String pertemuan;
+  final String? keterangan;
 
   AttendanceModel({
     required this.id,
@@ -21,6 +22,7 @@ class AttendanceModel {
     required this.userNpm,
     required this.className,
     required this.pertemuan,
+    this.keterangan,
   });
 
   factory AttendanceModel.fromFirestore(DocumentSnapshot doc) {
@@ -35,6 +37,7 @@ class AttendanceModel {
       userNpm: data['userNpm'] ?? '',
       className: data['className'] ?? 'Unknown Class',
       pertemuan: data['pertemuan'] ?? '-',
+      keterangan: data['keterangan'],
     );
   }
 
@@ -48,6 +51,7 @@ class AttendanceModel {
       'userNpm': userNpm,
       'className': className,
       'pertemuan': pertemuan,
+      if (keterangan != null) 'keterangan': keterangan,
     };
   }
 }

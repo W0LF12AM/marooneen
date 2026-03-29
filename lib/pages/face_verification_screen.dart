@@ -5,16 +5,21 @@ import 'package:marooneen/models/class_model.dart';
 import 'package:marooneen/models/user_profile_model.dart';
 import 'package:marooneen/services/attendance_service.dart';
 import 'package:marooneen/services/face_recognition_service.dart';
+import 'package:marooneen/services/fraud_service.dart';
 import 'package:shadcn_ui/shadcn_ui.dart';
 
 class FaceVerificationScreen extends StatefulWidget {
   final ClassModel kelas;
   final UserProfileModel userProfile;
+  final String? statusOverride;
+  final String? keterangan;
 
   const FaceVerificationScreen({
     super.key,
     required this.kelas,
     required this.userProfile,
+    this.statusOverride,
+    this.keterangan,
   });
 
   @override
@@ -25,6 +30,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
   CameraController? _cameraController;
   final FaceRecognitionService _faceLogic = FaceRecognitionService();
   final AttendanceService _attendanceService = AttendanceService();
+  final FraudService _fraudService = FraudService();
   bool _isProcessing = false;
   String _statusMessage = 'Arahkan wajah Anda ke dalam lingkaran...';
 
@@ -94,6 +100,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
           uid,
           widget.userProfile.name,
           widget.userProfile.npm,
+          statusOverride: widget.statusOverride,
+          keterangan: widget.keterangan,
         );
 
         if (mounted) {
@@ -106,7 +114,20 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> {
           Navigator.pop(context); // Kembali ke halaman absen kelas
         }
       } else {
-        // NOT MATCH
+        // NOT MATCH — log sebagai fraud attempt
+        final uid = FirebaseAuth.instance.currentUser!.uid;
+        await _fraudService.logFraud(
+          userId: uid,
+          userName: widget.userProfile.name,
+          userNpm: widget.userProfile.npm,
+          classId: widget.kelas.id,
+          className: widget.kelas.kelas,
+          fraudType: 'face_mismatch',
+          description:
+              'Verifikasi wajah gagal: wajah tidak cocok dengan data terdaftar. Score diff: ${distance.toStringAsFixed(2)}.',
+          faceScore: distance,
+        );
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(

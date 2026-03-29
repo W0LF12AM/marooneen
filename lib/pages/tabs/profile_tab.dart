@@ -125,6 +125,18 @@ class ProfileTab extends StatelessWidget {
                   ),
                   Divider(height: 1, color: Colors.grey.shade100),
                   _buildInfoRow(
+                    LucideIcons.mail,
+                    'Email',
+                    profile.email ?? '-',
+                  ),
+                  Divider(height: 1, color: Colors.grey.shade100),
+                  _buildInfoRow(
+                    LucideIcons.calendar,
+                    'Tgl Lahir',
+                    profile.birthDate ?? '-',
+                  ),
+                  Divider(height: 1, color: Colors.grey.shade100),
+                  _buildInfoRow(
                     LucideIcons.user,
                     'Gender',
                     profile.gender.isNotEmpty ? profile.gender : '-',

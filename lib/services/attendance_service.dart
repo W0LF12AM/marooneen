@@ -86,9 +86,11 @@ class AttendanceService {
     ClassModel kelas,
     String userId,
     String userName,
-    String userNpm,
-  ) async {
-    final status = calculateStatus(kelas);
+    String userNpm, {
+    String? statusOverride,
+    String? keterangan,
+  }) async {
+    final status = statusOverride ?? calculateStatus(kelas);
     final record = {
       'classId': kelas.id,
       'userId': userId,
@@ -98,6 +100,7 @@ class AttendanceService {
       'userNpm': userNpm,
       'className': kelas.kelas,
       'pertemuan': kelas.pertemuan.toString(),
+      if (keterangan != null) 'keterangan': keterangan,
     };
 
     // Pake format "classId_userId" jadi doc ID biar nggak bisa diabsen 2 kali

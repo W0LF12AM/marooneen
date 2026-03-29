@@ -8,6 +8,10 @@ class UserProfileModel {
   final String jurusan;
   final String phone;
   final String gender;
+  final String? email;
+  final String? birthDate;
+  final String? deviceId;
+  final String? deviceName;
   final List<double>? faceEmbedding; // ← Array penyimpan data wajah
 
   UserProfileModel({
@@ -18,6 +22,10 @@ class UserProfileModel {
     required this.jurusan,
     required this.phone,
     required this.gender,
+    this.email,
+    this.birthDate,
+    this.deviceId,
+    this.deviceName,
     this.faceEmbedding,
   });
 
@@ -40,6 +48,10 @@ class UserProfileModel {
       jurusan: data['jurusan'] ?? '',
       phone: data['phone'] ?? '',
       gender: data['gender'] ?? '',
+      email: data['email'],
+      birthDate: data['birthDate'],
+      deviceId: data['deviceId'],
+      deviceName: data['deviceName'],
       faceEmbedding: extractedEmbedding,
     );
   }
@@ -55,6 +67,10 @@ class UserProfileModel {
       'gender': gender,
     };
 
+    if (email != null) map['email'] = email;
+    if (birthDate != null) map['birthDate'] = birthDate;
+    if (deviceId != null) map['deviceId'] = deviceId;
+    if (deviceName != null) map['deviceName'] = deviceName;
     if (faceEmbedding != null) map['faceEmbedding'] = faceEmbedding;
 
     return map;
