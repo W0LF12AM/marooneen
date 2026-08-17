@@ -1,4 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:marooneen/models/attendance_model.dart';
 import 'package:marooneen/models/class_model.dart';
 
@@ -40,45 +41,67 @@ class AttendanceService {
   }
 
   // Logika ngitung "Ini telat atau engga"
-  String calculateStatus(ClassModel kelas) {
+  String calculateStatus(ClassModel kelas, {int toleranceMinutes = 15}) {
     final now = DateTime.now();
+    final localKelasTanggal = kelas.tanggal.toLocal();
 
-    // 1. Validasi Beda Hari: Kalau lu absen di hari yang BUKAN hari H kelasnya, otomatis Telat
-    if (now.year != kelas.tanggal.year ||
-        now.month != kelas.tanggal.month ||
-        now.day != kelas.tanggal.day) {
+    // 1. Validasi Beda Hari: Kalau absen di hari yang BUKAN hari H kelasnya, otomatis Telat
+    if (now.year != localKelasTanggal.year ||
+        now.month != localKelasTanggal.month ||
+        now.day != localKelasTanggal.day) {
       return 'Telat';
     }
 
-    // 2. Validasi Range Waktu Jam (contoh format: "08:00 - 10:30")
+    // 2. Validasi Jam / Waktu Presensi
     try {
-      final parts = kelas.jam.split('-');
-      
-      if (parts.length == 2) {
-        // Ada rentang waktu awal dan akhir
-        final startParts = parts[0].trim().split(':');
-        final endParts = parts[1].trim().split(':');
+      if (kelas.jam.trim().isEmpty) return 'Hadir';
 
-        final startTime = DateTime(now.year, now.month, now.day, int.parse(startParts[0]), int.parse(startParts[1]));
-        final endTime = DateTime(now.year, now.month, now.day, int.parse(endParts[0]), int.parse(endParts[1]));
+      // Ambil bagian jam mulai (sebelum tanda '-')
+      final startPart = kelas.jam.split('-')[0].trim();
 
-        // Kalau absen diluar range (sebelum mulai atau sesudah tutup), diitung telat 
-        if (now.isBefore(startTime) || now.isAfter(endTime)) return 'Telat';
-        return 'Hadir';
+      // Bersihkan karakter selain angka dan separator (: atau .)
+      final cleanTimeStr = startPart.replaceAll(RegExp(r'[^\d:\.]'), '');
 
-      } else {
-        // Cuma format 1 angka "08:00"
-        final singleParts = parts[0].trim().split(':');
-        final exactTime = DateTime(now.year, now.month, now.day, int.parse(singleParts[0]), int.parse(singleParts[1]));
-        
-        if (now.isAfter(exactTime)) return 'Telat';
+      // Standardisasi titik (.) menjadi titik dua (:)
+      final timeComponents = cleanTimeStr.replaceAll('.', ':').split(':');
+
+      if (timeComponents.length >= 2) {
+        final startHour = int.parse(timeComponents[0]);
+        final startMinute = int.parse(timeComponents[1]);
+
+        // Waktu mulai kelas
+        final startTime = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          startHour,
+          startMinute,
+        );
+
+        // Batas akhir toleransi presensi (StartTime + toleranceMinutes)
+        final lateThreshold = startTime.add(Duration(minutes: toleranceMinutes));
+
+        // Jika waktu presensi sekarang MELEBIHI batas toleransi -> TELAT
+        if (now.isAfter(lateThreshold)) {
+          return 'Telat';
+        }
+
         return 'Hadir';
       }
     } catch (e) {
-      // Ignored format fallback
+      debugPrint('Error parsing class time "${kelas.jam}": $e');
     }
-    
+
     return 'Hadir';
+  }
+
+  // Cek apakah user sudah pernah presensi di kelas ini
+  Future<bool> hasUserAttended(String classId, String userId) async {
+    final doc = await _db
+        .collection('presensi')
+        .doc('${classId}_$userId')
+        .get();
+    return doc.exists;
   }
 
   // Eksekusi nancet pin absen ke Firebase

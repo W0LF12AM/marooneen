@@ -42,6 +42,25 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
     try {
       final uid = FirebaseAuth.instance.currentUser!.uid;
+
+      // 0. Cek jika user sudah pernah presensi di kelas ini
+      final alreadyAttended = await _attendanceService.hasUserAttended(
+        widget.kelas.id,
+        uid,
+      );
+
+      if (alreadyAttended) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Anda sudah melakukan presensi untuk kelas ini!'),
+              backgroundColor: Colors.orange,
+            ),
+          );
+        }
+        return;
+      }
+
       var currentProfile = await _userProfileService.getProfile(uid);
 
       if (currentProfile == null) {
@@ -239,6 +258,8 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final currentUid = FirebaseAuth.instance.currentUser?.uid;
+
     return Scaffold(
       backgroundColor: secondaryColor,
       appBar: AppBar(
@@ -255,273 +276,349 @@ class _AttendanceScreenState extends State<AttendanceScreen> {
         backgroundColor: primaryColor,
         elevation: 0,
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            decoration: const BoxDecoration(
-              color: Colors.black,
-              borderRadius: BorderRadius.only(
-                bottomLeft: Radius.circular(24),
-                bottomRight: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Daftar Presensi Kelas',
-                  style: TextStyle(color: accentColor4, fontSize: 16),
+      body: StreamBuilder<List<AttendanceModel>>(
+        stream: _attendanceService.getAttendeesForClass(widget.kelas.id),
+        builder: (context, snapshot) {
+          final attendees = snapshot.data ?? [];
+          final myAttendanceList =
+              attendees.where((e) => e.userId == currentUid).toList();
+          final myAttendance =
+              myAttendanceList.isNotEmpty ? myAttendanceList.first : null;
+
+          return Column(
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 24,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  widget.kelas.tipeKelas.toLowerCase() == 'online'
-                      ? "Kelas Online"
-                      : widget.kelas.tempat,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 32,
-                    fontWeight: FontWeight.bold,
+                decoration: const BoxDecoration(
+                  color: Colors.black,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(24),
+                    bottomRight: Radius.circular(24),
                   ),
                 ),
-                const SizedBox(height: 12),
-                Row(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Icon(LucideIcons.clock, color: accentColor, size: 18),
-                    const SizedBox(width: 8),
                     Text(
-                      'Jadwal: ${widget.kelas.jam} WIB',
-                      style: const TextStyle(color: Colors.white),
+                      'Daftar Presensi Kelas',
+                      style: TextStyle(color: accentColor4, fontSize: 16),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      widget.kelas.tipeKelas.toLowerCase() == 'online'
+                          ? "Kelas Online"
+                          : widget.kelas.tempat,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 32,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Icon(LucideIcons.clock, color: accentColor, size: 18),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Jadwal: ${widget.kelas.jam} WIB',
+                          style: const TextStyle(color: Colors.white),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-              ],
-            ),
-          ),
+              ),
 
-          Expanded(
-            child: StreamBuilder<List<AttendanceModel>>(
-              stream: _attendanceService.getAttendeesForClass(widget.kelas.id),
-              builder: (context, snapshot) {
-                if (snapshot.hasError)
-                  return const Center(child: Text('Gagal Load Data Absensi'));
-                if (!snapshot.hasData)
-                  return const Center(child: CircularProgressIndicator());
+              Expanded(
+                child: snapshot.hasError
+                    ? const Center(child: Text('Gagal Load Data Absensi'))
+                    : !snapshot.hasData
+                    ? const Center(child: CircularProgressIndicator())
+                    : attendees.isEmpty
+                    ? const Center(
+                      child: Text('Belum ada mahasiswa yang presensi.'),
+                    )
+                    : ListView.separated(
+                      padding: const EdgeInsets.all(20),
+                      itemCount: attendees.length,
+                      separatorBuilder: (_, __) => const SizedBox(height: 12),
+                      itemBuilder: (context, index) {
+                        final data = attendees[index];
+                        final timeFormatted =
+                            "${data.timestamp.hour.toString().padLeft(2, '0')}:${data.timestamp.minute.toString().padLeft(2, '0')}";
 
-                final attendees = snapshot.data!;
-                if (attendees.isEmpty) {
-                  return const Center(
-                    child: Text('Belum ada mahasiswa yang presensi.'),
-                  );
-                }
+                        return Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: Colors.grey.shade200),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.04),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ListTile(
+                            contentPadding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
+                            ),
+                            leading: ShadAvatar(
+                              size: const Size(44, 44),
+                              'https://ui-avatars.com/api/?name=${Uri.encodeComponent(data.userName)}&background=000000&color=ffffff',
+                              placeholder: Text(
+                                data.userName.isNotEmpty
+                                    ? data.userName[0]
+                                    : '?',
+                              ),
+                            ),
+                            title: Text(
+                              data.userName,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                              ),
+                            ),
+                            subtitle: Padding(
+                              padding: const EdgeInsets.only(top: 4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    '${data.userNpm}  •  $timeFormatted WIB',
+                                    style: TextStyle(
+                                      color: primaryColor,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  if (data.keterangan != null &&
+                                      data.keterangan!.isNotEmpty)
+                                    Padding(
+                                      padding: const EdgeInsets.only(top: 4),
+                                      child: Text(
+                                        data.keterangan!,
+                                        style: TextStyle(
+                                          color: Colors.grey.shade600,
+                                          fontSize: 12,
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            trailing: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: data.status == 'Hadir'
+                                    ? Colors.green.shade50
+                                    : Colors.red.shade50,
+                                border: Border.all(
+                                  color: data.status == 'Hadir'
+                                      ? Colors.green.shade200
+                                      : Colors.red.shade200,
+                                ),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    data.status == 'Hadir'
+                                        ? LucideIcons.check
+                                        : LucideIcons.clockAlert,
+                                    size: 14,
+                                    color: data.status == 'Hadir'
+                                        ? Colors.green.shade700
+                                        : Colors.red.shade700,
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    data.status,
+                                    style: TextStyle(
+                                      color: data.status == 'Hadir'
+                                          ? Colors.green.shade700
+                                          : Colors.red.shade700,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+              ),
 
-                return ListView.separated(
-                  padding: const EdgeInsets.all(20),
-                  itemCount: attendees.length,
-                  separatorBuilder: (_, __) => const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    final data = attendees[index];
-                    final timeFormatted =
-                        "${data.timestamp.hour.toString().padLeft(2, '0')}:${data.timestamp.minute.toString().padLeft(2, '0')}";
-
-                    return Container(
-                      decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: Colors.grey.shade200),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
-                            blurRadius: 10,
-                            offset: const Offset(0, 4),
+              // Tombol Sticky Bawah (atau Status Banner jika sudah presensi)
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.05),
+                      blurRadius: 10,
+                      offset: const Offset(0, -5),
+                    ),
+                  ],
+                ),
+                child: myAttendance != null
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 14,
+                        ),
+                        decoration: BoxDecoration(
+                          color: myAttendance.status == 'Hadir'
+                              ? Colors.green.shade50
+                              : Colors.amber.shade50,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: myAttendance.status == 'Hadir'
+                                ? Colors.green.shade200
+                                : Colors.amber.shade200,
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              myAttendance.status == 'Hadir'
+                                  ? LucideIcons.check
+                                  : LucideIcons.clockAlert,
+                              color: myAttendance.status == 'Hadir'
+                                  ? Colors.green.shade700
+                                  : Colors.amber.shade800,
+                              size: 24,
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'Anda Sudah Mengisi Presensi',
+                                    style: TextStyle(
+                                      color: myAttendance.status == 'Hadir'
+                                          ? Colors.green.shade900
+                                          : Colors.amber.shade900,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Status: ${myAttendance.status} • ${myAttendance.timestamp.hour.toString().padLeft(2, '0')}:${myAttendance.timestamp.minute.toString().padLeft(2, '0')} WIB',
+                                    style: TextStyle(
+                                      color: myAttendance.status == 'Hadir'
+                                          ? Colors.green.shade700
+                                          : Colors.amber.shade800,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          // Dropdown Status
+                          Container(
+                            height: 48,
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            decoration: BoxDecoration(
+                              border: Border.all(color: Colors.grey.shade300),
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: _selectedStatus,
+                                isExpanded: true,
+                                icon: const Icon(
+                                  LucideIcons.chevronDown,
+                                  size: 16,
+                                ),
+                                items: [
+                                  'Hadir',
+                                  'Telat',
+                                  'Izin',
+                                  'Sakit',
+                                  'Pindah Kelas',
+                                ]
+                                    .map(
+                                      (e) => DropdownMenuItem(
+                                        value: e,
+                                        child: Text(
+                                          e,
+                                          style: const TextStyle(fontSize: 14),
+                                        ),
+                                      ),
+                                    )
+                                    .toList(),
+                                onChanged: (v) => setState(() {
+                                  _selectedStatus = v!;
+                                  _reasonController.clear();
+                                }),
+                              ),
+                            ),
+                          ),
+                          if (_selectedStatus != 'Hadir') ...[
+                            const SizedBox(height: 12),
+                            ShadInput(
+                              controller: _reasonController,
+                              placeholder: const Text(
+                                'Masukkan alasan / keterangan (Wajib)',
+                              ),
+                            ),
+                          ],
+                          const SizedBox(height: 16),
+                          ShadButton(
+                            height: 56,
+                            backgroundColor: Colors.black,
+                            width: double.infinity,
+                            onPressed: _isProcessing ? null : _handleAbsen,
+                            child: _isProcessing
+                                ? const SizedBox(
+                                    height: 20,
+                                    width: 20,
+                                    child: CircularProgressIndicator(
+                                      color: Colors.white,
+                                      strokeWidth: 2,
+                                    ),
+                                  )
+                                : Text(
+                                    _selectedStatus == 'Hadir' ||
+                                            _selectedStatus == 'Telat'
+                                        ? 'Presensi Sekarang'
+                                        : 'Kirim Keterangan',
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 18,
+                                    ),
+                                  ),
                           ),
                         ],
                       ),
-                      child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        leading: ShadAvatar(
-                          size: const Size(44, 44),
-                          'https://ui-avatars.com/api/?name=${Uri.encodeComponent(data.userName)}&background=000000&color=ffffff',
-                          placeholder: Text(
-                            data.userName.isNotEmpty ? data.userName[0] : '?',
-                          ),
-                        ),
-                        title: Text(
-                          data.userName,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        subtitle: Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '${data.userNpm}  •  $timeFormatted WIB',
-                                style: TextStyle(
-                                  color: primaryColor,
-                                  fontSize: 13,
-                                ),
-                              ),
-                              if (data.keterangan != null &&
-                                  data.keterangan!.isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Text(
-                                    data.keterangan!,
-                                    style: TextStyle(
-                                      color: Colors.grey.shade600,
-                                      fontSize: 12,
-                                      fontStyle: FontStyle.italic,
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        trailing: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 12,
-                            vertical: 6,
-                          ),
-                          decoration: BoxDecoration(
-                            color: data.status == 'Hadir'
-                                ? Colors.green.shade50
-                                : Colors.red.shade50,
-                            border: Border.all(
-                              color: data.status == 'Hadir'
-                                  ? Colors.green.shade200
-                                  : Colors.red.shade200,
-                            ),
-                            borderRadius: BorderRadius.circular(20),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                data.status == 'Hadir'
-                                    ? LucideIcons.check
-                                    : LucideIcons.clockAlert,
-                                size: 14,
-                                color: data.status == 'Hadir'
-                                    ? Colors.green.shade700
-                                    : Colors.red.shade700,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                data.status,
-                                style: TextStyle(
-                                  color: data.status == 'Hadir'
-                                      ? Colors.green.shade700
-                                      : Colors.red.shade700,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    );
-                  },
-                );
-              },
-            ),
-          ),
-
-          // Tombol Sticky Bawah
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.05),
-                  blurRadius: 10,
-                  offset: const Offset(0, -5),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Dropdown Status
-                Container(
-                  height: 48,
-                  padding: const EdgeInsets.symmetric(horizontal: 16),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey.shade300),
-                    borderRadius: BorderRadius.circular(6),
-                  ),
-                  child: DropdownButtonHideUnderline(
-                    child: DropdownButton<String>(
-                      value: _selectedStatus,
-                      isExpanded: true,
-                      icon: const Icon(LucideIcons.chevronDown, size: 16),
-                      items: ['Hadir', 'Telat', 'Izin', 'Sakit', 'Pindah Kelas']
-                          .map(
-                            (e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(
-                                e,
-                                style: const TextStyle(fontSize: 14),
-                              ),
-                            ),
-                          )
-                          .toList(),
-                      onChanged: (v) => setState(() {
-                        _selectedStatus = v!;
-                        _reasonController.clear();
-                      }),
-                    ),
-                  ),
-                ),
-                if (_selectedStatus != 'Hadir') ...[
-                  const SizedBox(height: 12),
-                  ShadInput(
-                    controller: _reasonController,
-                    placeholder: const Text(
-                      'Masukkan alasan / keterangan (Wajib)',
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 16),
-                ShadButton(
-                  height: 56,
-                  backgroundColor: Colors.black,
-                  width: double.infinity,
-                  onPressed: _isProcessing ? null : _handleAbsen,
-                  child: _isProcessing
-                      ? const SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2,
-                          ),
-                        )
-                      : Text(
-                          _selectedStatus == 'Hadir' ||
-                                  _selectedStatus == 'Telat'
-                              ? 'Presensi Sekarang'
-                              : 'Kirim Keterangan',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                ),
-              ],
-            ),
-          ),
-        ],
+              ),
+            ],
+          );
+        },
       ),
     );
   }
